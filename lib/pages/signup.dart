@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:newlogin/pages/coverpage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_helper.dart';
 
 class Signup extends StatefulWidget {
@@ -11,6 +11,7 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
+  ApiHelper apiHelper = ApiHelper();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -46,9 +47,9 @@ class _SignupState extends State<Signup> {
       return;
     }
 
-    // Check username availability using SharedPreferences
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? existingUsername = prefs.getString(username);
+    // Check username availability using flutter_secure_storage
+    final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+    final String? existingUsername = await secureStorage.read(key: username);
     if (existingUsername != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -58,8 +59,8 @@ class _SignupState extends State<Signup> {
       return;
     }
 
-    // Store user details in SharedPreferences
-    await prefs.setString(username, email);
+    // Store user details in flutter_secure_storage
+    await secureStorage.write(key: username, value: email);
 
     // Call signUp method from ApiHelper
     final signUpResult = await ApiHelper.signUp(email, username, password);

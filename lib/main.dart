@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:newlogin/pages/coverpage.dart';
+import 'package:newlogin/pages/login.dart';
+import 'package:newlogin/pages/signup.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
+  const MyApp({Key? key});
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(debugShowCheckedModeBanner: false, home: CoverPage());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => CoverPage(),
+        '/login': (context) => Login(),
+        '/signup': (context) => Signup(),
+      },
+    );
   }
 }

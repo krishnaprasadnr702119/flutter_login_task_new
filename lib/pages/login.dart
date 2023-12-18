@@ -18,6 +18,7 @@ class _LoginState extends State<Login> {
     final String password = _passwordController.text;
 
     final responseData = await ApiHelper.signIn(email, password);
+    print('API Response: $responseData'); // Log the response data
 
     if (responseData != null) {
       // Navigate to the dashboard or handle success

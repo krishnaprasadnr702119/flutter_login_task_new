@@ -9,6 +9,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   String? protectedData = '';
+  ApiHelper apiHelper = ApiHelper();
 
   @override
   Widget build(BuildContext context) {
@@ -39,20 +40,39 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> fetchData(BuildContext context) async {
+    // Fetch protected data with the current token
     final result = await ApiHelper.getProtectedData(context);
+
     if (result != null) {
       setState(() {
         protectedData = result;
       });
       print(protectedData);
     } else {
-      setState(() {
-        protectedData = 'Failed to fetch data.';
+      // If the initial token fails or expired, try refreshing it
+      final refreshedToken = await ApiHelper.refreshToken();
+      if (refreshedToken != null) {
+        // Retry fetching data with the new token
+        final newData = await ApiHelper.getProtectedData(context);
+        if (newData != null) {
+          setState(() {
+            protectedData = newData;
+          });
+          print(protectedData);
+        } else {
+          protectedData = 'Failed to fetch data.';
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CoverPage()),
+          );
+        }
+      } else {
+        protectedData = 'Failed to refresh token.';
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => CoverPage()),
         );
-      });
+      }
     }
   }
 }
