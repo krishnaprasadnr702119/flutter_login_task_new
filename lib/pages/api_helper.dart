@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:newlogin/pages/coverpage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiHelper extends Interceptor {
@@ -53,6 +54,8 @@ class ApiHelper extends Interceptor {
       }
     } catch (e) {
       print('Error during token refresh: $e');
+
+      return null;
     }
     return null;
   }
@@ -108,62 +111,21 @@ class ApiHelper extends Interceptor {
 
   static Future<String?> getProtectedData(BuildContext context) async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? accessToken = prefs.getString('accessToken');
-
-      if (accessToken == null) {
-        print('Access token not found. Please sign in.');
-        return null;
-      }
-
-      final Response? response = await _fetchProtectedData(accessToken);
-      if (response == null) {
-        return null;
-      }
-      print(response.statusCode);
+      final response = await _dio.get(
+        '$baseUrl/protected',
+      );
       if (response.statusCode == 200) {
         final protectedData = response.data;
         return protectedData.toString();
-      } else if (response.statusCode == 401) {
-        final newAccessToken = await refreshToken();
-        if (newAccessToken != null) {
-          // Retry request with new access token
-          // final newResponse = await _fetchProtectedData(newAccessToken);
-          // if (newResponse.statusCode == 200) {
-          //   final protectedData = newResponse.data;
-          //   return protectedData.toString();
-          // }
-        }
-        print('Failed to refresh token or fetch protected data.');
-        return null;
       } else {
-        print('Failed to fetch protected data: ${response.statusCode}');
-        return null;
+        return await getProtectedData(context);
       }
     } catch (error) {
       print('Error fetching protected data: $error');
-      return null;
-    }
-  }
-
-  static Future<Response?> _fetchProtectedData(String accessToken) async {
-    try {
-      final response = await _dio.get(
-        '$baseUrl/protected',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-            'Content-Type': 'application/json',
-          },
-        ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => CoverPage()),
       );
-      return response;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        return e.response;
-      } else {
-        return null;
-      }
     }
   }
 
