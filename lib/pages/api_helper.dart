@@ -127,6 +127,7 @@ class ApiHelper extends Interceptor {
         MaterialPageRoute(builder: (context) => CoverPage()),
       );
     }
+    return null;
   }
 
   static Future<void> storeTokens(
