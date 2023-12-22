@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiHelper extends Interceptor {
   static const String baseUrl = 'http://192.168.4.166:3001';
-  static Dio _dio = Dio();
+  static final Dio _dio = Dio();
 
   ApiHelper() {
     _dio.interceptors.add(

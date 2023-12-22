@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:newlogin/pages/coverpage.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_helper.dart';
 
 class Signup extends StatefulWidget {
@@ -48,9 +48,9 @@ class _SignupState extends State<Signup> {
     }
 
     // Check username availability using flutter_secure_storage
-    final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
-    final String? existingUsername = await secureStorage.read(key: username);
-    if (existingUsername != null) {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool existingUsername = prefs.containsKey(username);
+    if (existingUsername) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Username is already taken'),
@@ -60,7 +60,7 @@ class _SignupState extends State<Signup> {
     }
 
     // Store user details in flutter_secure_storage
-    await secureStorage.write(key: username, value: email);
+    prefs.setString(username, email);
 
     // Call signUp method from ApiHelper
     final signUpResult = await ApiHelper.signUp(email, username, password);
