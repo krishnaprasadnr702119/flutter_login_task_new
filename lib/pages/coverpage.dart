@@ -46,7 +46,7 @@ class CoverPage extends StatelessWidget {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => Login()));
+                                    builder: (context) => const Login()));
                           },
                           child: const Text('Sign In'),
                         ),
@@ -58,7 +58,7 @@ class CoverPage extends StatelessWidget {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => Signup()));
+                                    builder: (context) => const Signup()));
                           },
                           child: const Text('Sign Up'),
                         ),

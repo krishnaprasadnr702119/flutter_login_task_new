@@ -9,10 +9,10 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   String? protectedData = '';
-  ApiHelper apiHelper = ApiHelper();
 
   @override
   Widget build(BuildContext context) {
+    ApiHelper apiHelper = ApiHelper(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.blue[200],

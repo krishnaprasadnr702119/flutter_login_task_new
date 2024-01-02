@@ -7,7 +7,7 @@ class ApiHelper extends Interceptor {
   static const String baseUrl = 'http://192.168.4.166:3001';
   static final Dio _dio = Dio();
 
-  ApiHelper() {
+  ApiHelper(BuildContext context) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -22,12 +22,17 @@ class ApiHelper extends Interceptor {
         onError: (DioError e, handler) async {
           if (e.response?.statusCode == 401) {
             String? newAccessToken = await refreshToken();
+            if (newAccessToken == null) {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const CoverPage()));
+            }
 
             e.requestOptions.headers['Authorization'] =
                 'Bearer $newAccessToken';
 
             return handler.resolve(await _dio.fetch(e.requestOptions));
           }
+
           return handler.next(e);
         },
       ),
@@ -35,11 +40,12 @@ class ApiHelper extends Interceptor {
   }
 
   static Future<String?> refreshToken() async {
+    var dio = Dio();
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       String? refreshToken = prefs.getString('refreshToken');
       if (refreshToken != null) {
-        final Response response = await _dio.post(
+        final Response response = await dio.post(
           '$baseUrl/refresh',
           options: Options(
             headers: {
@@ -122,10 +128,6 @@ class ApiHelper extends Interceptor {
       }
     } catch (error) {
       print('Error fetching protected data: $error');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => CoverPage()),
-      );
     }
     return null;
   }
