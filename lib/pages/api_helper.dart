@@ -23,6 +23,7 @@ class ApiHelper extends Interceptor {
           if (e.response?.statusCode == 401) {
             String? newAccessToken = await refreshToken();
             if (newAccessToken == null) {
+              clearTokens(context);
               Navigator.push(context,
                   MaterialPageRoute(builder: (context) => const CoverPage()));
             }
@@ -139,5 +140,11 @@ class ApiHelper extends Interceptor {
     print(refreshToken);
     await prefs.setString('accessToken', accessToken);
     await prefs.setString('refreshToken', refreshToken);
+  }
+
+  static Future<void> clearTokens(BuildContext context) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('accessToken');
+    await prefs.remove('refreshToken');
   }
 }
