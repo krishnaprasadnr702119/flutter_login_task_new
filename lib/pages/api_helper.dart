@@ -118,14 +118,60 @@ class ApiHelper extends Interceptor {
 
   static Future<String?> getProtectedData(BuildContext context) async {
     try {
-      final response = await _dio.get(
-        '$baseUrl/protected',
-      );
-      if (response.statusCode == 200) {
-        final protectedData = response.data;
-        return protectedData.toString();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? accessToken = prefs.getString('accessToken');
+
+      if (accessToken != null) {
+        final response = await _dio.get(
+          '$baseUrl/protected',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+            },
+          ),
+        );
+
+        if (response.statusCode == 200) {
+          final protectedData = response.data;
+          return protectedData.toString();
+        } else if (response.statusCode == 401) {
+          final newAccessToken = await refreshToken();
+
+          if (newAccessToken != null) {
+            // Retry the request with the new access token
+            final newResponse = await _dio.get(
+              '$baseUrl/protected',
+              options: Options(
+                headers: {
+                  'Authorization': 'Bearer $newAccessToken',
+                  'Content-Type': 'application/json',
+                },
+              ),
+            );
+
+            if (newResponse.statusCode == 200) {
+              final protectedData = newResponse.data;
+              return protectedData.toString();
+            }
+          }
+
+          // If new token retrieval fails or unauthorized even after refresh, navigate to CoverPage
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CoverPage()),
+          );
+          return null;
+        }
       } else {
-        return await getProtectedData(context);
+        // No access token found, navigate to CoverPage or handle accordingly
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CoverPage()),
+        );
+        return null;
       }
     } catch (error) {
       print('Error fetching protected data: $error');
