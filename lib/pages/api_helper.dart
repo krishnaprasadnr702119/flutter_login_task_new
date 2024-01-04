@@ -29,7 +29,6 @@ class ApiHelper extends Interceptor {
 
             return handler.resolve(await _dio.fetch(e.requestOptions));
           }
-
           return handler.next(e);
         },
       ),
@@ -56,7 +55,8 @@ class ApiHelper extends Interceptor {
         return newAccessToken;
       }
     } catch (e) {
-      print('Refresh Token expired: $e');
+      print('Refresh Token Expired: $e');
+      await clearTokens(context);
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CoverPage()),
