@@ -50,7 +50,7 @@ class _DashboardState extends State<Dashboard> {
       print(protectedData);
     } else {
       // If the initial token fails or expired, try refreshing it
-      final refreshedToken = await ApiHelper.refreshToken();
+      final refreshedToken = await ApiHelper.refreshToken(context);
       if (refreshedToken != null) {
         // Retry fetching data with the new token
         final newData = await ApiHelper.getProtectedData(context);

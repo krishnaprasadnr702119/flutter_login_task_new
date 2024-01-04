@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:newlogin/pages/coverpage.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiHelper extends Interceptor {
@@ -21,12 +22,7 @@ class ApiHelper extends Interceptor {
         },
         onError: (DioError e, handler) async {
           if (e.response?.statusCode == 401) {
-            String? newAccessToken = await refreshToken();
-            if (newAccessToken == null) {
-              clearTokens(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const CoverPage()));
-            }
+            String? newAccessToken = await refreshToken(context);
 
             e.requestOptions.headers['Authorization'] =
                 'Bearer $newAccessToken';
@@ -40,7 +36,7 @@ class ApiHelper extends Interceptor {
     );
   }
 
-  static Future<String?> refreshToken() async {
+  static Future<String?> refreshToken(BuildContext context) async {
     var dio = Dio();
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -60,8 +56,11 @@ class ApiHelper extends Interceptor {
         return newAccessToken;
       }
     } catch (e) {
-      print('Error during token refresh: $e');
-
+      print('Refresh Token expired: $e');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CoverPage()),
+      );
       return null;
     }
     return null;
@@ -121,58 +120,16 @@ class ApiHelper extends Interceptor {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String? accessToken = prefs.getString('accessToken');
 
-      if (accessToken != null) {
-        final response = await _dio.get(
-          '$baseUrl/protected',
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Content-Type': 'application/json',
-            },
-          ),
-        );
+      final response = await _dio.get(
+        '$baseUrl/protected',
+      );
 
-        if (response.statusCode == 200) {
-          final protectedData = response.data;
-          return protectedData.toString();
-        } else if (response.statusCode == 401) {
-          final newAccessToken = await refreshToken();
-
-          if (newAccessToken != null) {
-            // Retry the request with the new access token
-            final newResponse = await _dio.get(
-              '$baseUrl/protected',
-              options: Options(
-                headers: {
-                  'Authorization': 'Bearer $newAccessToken',
-                  'Content-Type': 'application/json',
-                },
-              ),
-            );
-
-            if (newResponse.statusCode == 200) {
-              final protectedData = newResponse.data;
-              return protectedData.toString();
-            }
-          }
-
-          // If new token retrieval fails or unauthorized even after refresh, navigate to CoverPage
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CoverPage()),
-          );
-          return null;
-        }
-      } else {
-        // No access token found, navigate to CoverPage or handle accordingly
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CoverPage()),
-        );
-        return null;
+      if (response.statusCode == 200) {
+        final protectedData = response.data;
+        return protectedData.toString();
       }
+
+      return null;
     } catch (error) {
       print('Error fetching protected data: $error');
     }
