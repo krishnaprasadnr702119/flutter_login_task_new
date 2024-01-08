@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:newlogin/pages/coverpage.dart';
-import 'api_helper.dart';
+import 'package:newlogin/screens/coverpage.dart';
+import 'package:newlogin/services/api_services.dart';
 
 class Dashboard extends StatefulWidget {
   @override
@@ -9,10 +9,16 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   String? protectedData = '';
+  late ApiHelper apiHelper; // Declare it here
+
+  @override
+  void initState() {
+    super.initState();
+    apiHelper = ApiHelper(context); // Initialize it in initState
+  }
 
   @override
   Widget build(BuildContext context) {
-    ApiHelper apiHelper = ApiHelper(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.blue[200],
@@ -40,8 +46,8 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> fetchData(BuildContext context) async {
-    // Fetch protected data with the current token
-    final result = await ApiHelper.getProtectedData(context);
+    final result =
+        await ApiHelper.getProtectedData(context); // Using apiHelper here
 
     if (result != null) {
       setState(() {
@@ -49,10 +55,8 @@ class _DashboardState extends State<Dashboard> {
       });
       print(protectedData);
     } else {
-      // If the initial token fails or expired, try refreshing it
       final refreshedToken = await ApiHelper.refreshToken(context);
       if (refreshedToken != null) {
-        // Retry fetching data with the new token
         final newData = await ApiHelper.getProtectedData(context);
         if (newData != null) {
           setState(() {

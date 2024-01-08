@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:newlogin/pages/coverpage.dart';
+import 'package:newlogin/screens/coverpage.dart';
+import 'package:newlogin/services/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_helper.dart';
 
 class Signup extends StatefulWidget {
   const Signup({Key? key}) : super(key: key);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:newlogin/pages/login.dart';
-import 'package:newlogin/pages/signup.dart';
+import 'package:newlogin/screens/login.dart';
+import 'package:newlogin/screens/signup.dart';
 
 class CoverPage extends StatelessWidget {
   const CoverPage({super.key});

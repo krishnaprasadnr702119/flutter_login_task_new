@@ -1,33 +1,42 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:newlogin/pages/coverpage.dart';
+import 'package:newlogin/headers/auth_headers.dart';
+import 'package:newlogin/headers/protected_data_headers.dart';
+import 'package:newlogin/headers/signin_headers.dart';
+import 'package:newlogin/headers/signup_headers.dart';
+import 'package:newlogin/screens/coverpage.dart';
+import 'package:newlogin/services/api_constants.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiHelper extends Interceptor {
-  static const String baseUrl = 'http://192.168.4.166:3001';
   static final Dio _dio = Dio();
 
   ApiHelper(BuildContext context) {
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          Options(
-            headers: {
-              'Authorization': 'Bearer $refreshToken',
-              'Content-Type': 'application/json',
-            },
-          );
+        onRequest: (options, handler) async {
+          final authHeaders = await AuthHeaders.getAuthHeaders();
+          options.headers = authHeaders;
+
           return handler.next(options);
         },
         onError: (DioError e, handler) async {
           if (e.response?.statusCode == 401) {
             String? newAccessToken = await refreshToken(context);
 
-            e.requestOptions.headers['Authorization'] =
-                'Bearer $newAccessToken';
-
-            return handler.resolve(await _dio.fetch(e.requestOptions));
+            if (newAccessToken != null) {
+              e.requestOptions.headers['Authorization'] =
+                  'Bearer $newAccessToken';
+              return handler.resolve(await _dio.fetch(e.requestOptions));
+            } else {
+              await clearTokens(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CoverPage()),
+              );
+              return null;
+            }
           }
           return handler.next(e);
         },
@@ -36,13 +45,13 @@ class ApiHelper extends Interceptor {
   }
 
   static Future<String?> refreshToken(BuildContext context) async {
-    var dio = Dio();
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       String? refreshToken = prefs.getString('refreshToken');
       if (refreshToken != null) {
+        final dio = Dio();
         final Response response = await dio.post(
-          '$baseUrl/refresh',
+          '${ApiConstants.baseUrl}${ApiConstants.refreshEndpoint}',
           options: Options(
             headers: {
               'Authorization': 'Bearer $refreshToken',
@@ -66,12 +75,19 @@ class ApiHelper extends Interceptor {
     return null;
   }
 
+  static Future<void> clearTokens(BuildContext context) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('accessToken');
+    await prefs.remove('refreshToken');
+  }
+
   static Future<String?> signIn(String email, String password) async {
     try {
+      final signInHeaders = SignInHeaders.getSignInHeaders();
       final response = await _dio.post(
-        '$baseUrl/login',
+        '${ApiConstants.baseUrl}${ApiConstants.loginEndpoint}',
         data: {'email': email, 'password': password},
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(headers: signInHeaders),
       );
 
       if (response.statusCode == 200) {
@@ -91,20 +107,18 @@ class ApiHelper extends Interceptor {
   static Future<String?> signUp(
       String email, String name, String password) async {
     try {
+      final signUpHeaders = SignUpHeaders.getSignUpHeaders();
       final response = await _dio.post(
-        '$baseUrl/signup',
+        '${ApiConstants.baseUrl}${ApiConstants.signupEndpoint}',
         data: {
           'email': email,
           'name': name,
           'password': password,
         },
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        options: Options(headers: signUpHeaders),
       );
 
       if (response.statusCode == 200) {
-        final responseData = response.data;
         return 'Success';
       } else {
         return null;
@@ -117,11 +131,11 @@ class ApiHelper extends Interceptor {
 
   static Future<String?> getProtectedData(BuildContext context) async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? accessToken = prefs.getString('accessToken');
-
+      final protectedDataHeaders =
+          await ProtectedDataHeaders.getProtectedDataHeaders();
       final response = await _dio.get(
-        '$baseUrl/protected',
+        '${ApiConstants.baseUrl}${ApiConstants.protectedDataEndpoint}',
+        options: Options(headers: protectedDataHeaders),
       );
 
       if (response.statusCode == 200) {
@@ -132,22 +146,14 @@ class ApiHelper extends Interceptor {
       return null;
     } catch (error) {
       print('Error fetching protected data: $error');
+      return null;
     }
-    return null;
   }
 
   static Future<void> storeTokens(
       String accessToken, String refreshToken) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    print(accessToken);
-    print(refreshToken);
     await prefs.setString('accessToken', accessToken);
     await prefs.setString('refreshToken', refreshToken);
-  }
-
-  static Future<void> clearTokens(BuildContext context) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
-    await prefs.remove('refreshToken');
   }
 }
