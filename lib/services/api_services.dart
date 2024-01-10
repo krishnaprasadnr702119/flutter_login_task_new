@@ -1,12 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:newlogin/headers/auth_headers.dart';
-import 'package:newlogin/headers/protected_data_headers.dart';
-import 'package:newlogin/headers/signin_headers.dart';
-import 'package:newlogin/headers/signup_headers.dart';
 import 'package:newlogin/screens/coverpage.dart';
 import 'package:newlogin/services/api_constants.dart';
-
+import 'package:newlogin/storage/storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiHelper extends Interceptor {
@@ -30,7 +27,7 @@ class ApiHelper extends Interceptor {
                   'Bearer $newAccessToken';
               return handler.resolve(await _dio.fetch(e.requestOptions));
             } else {
-              await clearTokens(context);
+              await Storage.clearTokens(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => CoverPage()),
@@ -44,6 +41,13 @@ class ApiHelper extends Interceptor {
     );
   }
 
+  Future<void> _handleRequest(RequestOptions options, handler) async {
+    final authHeaders = await AuthHeaders.getAuthHeaders();
+    options.headers = authHeaders;
+
+    return handler.next(options);
+  }
+
   static Future<String?> refreshToken(BuildContext context) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -52,12 +56,7 @@ class ApiHelper extends Interceptor {
         final dio = Dio();
         final Response response = await dio.post(
           '${ApiConstants.baseUrl}${ApiConstants.refreshEndpoint}',
-          options: Options(
-            headers: {
-              'Authorization': 'Bearer $refreshToken',
-              'Content-Type': 'application/json',
-            },
-          ),
+          options: RefreshHeader.getAuthHeaders(refreshToken),
         );
         final newAccessToken = response.data['accessToken'];
         await prefs.setString('accessToken', newAccessToken);
@@ -65,7 +64,7 @@ class ApiHelper extends Interceptor {
       }
     } catch (e) {
       print('Refresh Token Expired: $e');
-      await clearTokens(context);
+      await Storage.clearTokens(context);
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CoverPage()),
@@ -73,12 +72,6 @@ class ApiHelper extends Interceptor {
       return null;
     }
     return null;
-  }
-
-  static Future<void> clearTokens(BuildContext context) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
-    await prefs.remove('refreshToken');
   }
 
   static Future<String?> signIn(String email, String password) async {
@@ -92,14 +85,13 @@ class ApiHelper extends Interceptor {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        await storeTokens(
+        await Storage.storeTokens(
             responseData['accessToken'], responseData['refreshToken']);
         return 'Success';
       } else {
         return null;
       }
     } catch (error) {
-      print('Sign-in error: $error');
       return null;
     }
   }
@@ -124,7 +116,6 @@ class ApiHelper extends Interceptor {
         return null;
       }
     } catch (error) {
-      print('Sign-up error: $error');
       return null;
     }
   }
@@ -148,12 +139,5 @@ class ApiHelper extends Interceptor {
       print('Error fetching protected data: $error');
       return null;
     }
-  }
-
-  static Future<void> storeTokens(
-      String accessToken, String refreshToken) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accessToken', accessToken);
-    await prefs.setString('refreshToken', refreshToken);
   }
 }
